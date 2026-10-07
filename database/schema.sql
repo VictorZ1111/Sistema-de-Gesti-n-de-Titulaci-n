@@ -94,6 +94,39 @@ CREATE TABLE IF NOT EXISTS graduation_enrollments (
         ))
 );
 
+-- 7. Revisión del récord académico del estudiante
+CREATE TABLE IF NOT EXISTS academic_record_reviews (
+    id SERIAL PRIMARY KEY,
+
+    graduation_enrollment_id INTEGER NOT NULL
+        REFERENCES graduation_enrollments(id) ON DELETE CASCADE,
+
+    reviewed_by INTEGER
+        REFERENCES users(id) ON DELETE SET NULL,
+
+    status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+    -- PENDING, UNDER_REVIEW, APPROVED, OBSERVED, REJECTED
+
+    observations TEXT,
+
+    review_date TIMESTAMP WITH TIME ZONE,
+
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT uq_academic_record_review
+        UNIQUE (graduation_enrollment_id),
+
+    CONSTRAINT chk_academic_record_review_status
+        CHECK (status IN (
+            'PENDING',
+            'UNDER_REVIEW',
+            'APPROVED',
+            'OBSERVED',
+            'REJECTED'
+        ))
+);
+
 -- 5. Tabla de Proyectos de Tesis / Titulación
 CREATE TABLE IF NOT EXISTS projects_theses (
     id SERIAL PRIMARY KEY,
@@ -156,3 +189,9 @@ ON graduation_enrollments(academic_period_id);
 
 CREATE INDEX IF NOT EXISTS idx_graduation_enrollments_status
 ON graduation_enrollments(status);
+
+CREATE INDEX IF NOT EXISTS idx_academic_record_reviews_enrollment
+ON academic_record_reviews(graduation_enrollment_id);
+
+CREATE INDEX IF NOT EXISTS idx_academic_record_reviews_status
+ON academic_record_reviews(status);
