@@ -54,6 +54,46 @@ CREATE TABLE IF NOT EXISTS advisors (
     max_students INTEGER DEFAULT 5            -- Límite de tesistas/estudiantes asignados
 );
 
+-- 5. Tabla de Períodos Académicos
+CREATE TABLE IF NOT EXISTS academic_periods (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,               -- Ej: 2026-2
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT chk_academic_period_dates
+        CHECK (end_date >= start_date)
+);
+
+-- 6. Inscripción del estudiante al proceso de titulación
+CREATE TABLE IF NOT EXISTS graduation_enrollments (
+    id SERIAL PRIMARY KEY,
+    student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+    academic_period_id INTEGER NOT NULL REFERENCES academic_periods(id) ON DELETE RESTRICT,
+
+    status VARCHAR(50) NOT NULL DEFAULT 'REGISTERED',
+    -- REGISTERED, UNDER_REVIEW, ENABLED, REJECTED
+
+    registration_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    observations TEXT,
+
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT uq_student_graduation_period
+        UNIQUE (student_id, academic_period_id),
+
+    CONSTRAINT chk_graduation_enrollment_status
+        CHECK (status IN (
+            'REGISTERED',
+            'UNDER_REVIEW',
+            'ENABLED',
+            'REJECTED'
+        ))
+);
+
 -- 5. Tabla de Proyectos de Tesis / Titulación
 CREATE TABLE IF NOT EXISTS projects_theses (
     id SERIAL PRIMARY KEY,
@@ -107,3 +147,12 @@ CREATE INDEX IF NOT EXISTS idx_students_code ON students(student_code);
 CREATE INDEX IF NOT EXISTS idx_procedures_student ON procedures(student_id);
 CREATE INDEX IF NOT EXISTS idx_projects_student ON projects_theses(student_id);
 CREATE INDEX IF NOT EXISTS idx_procedures_stages ON procedure_stages(procedure_id);
+
+CREATE INDEX IF NOT EXISTS idx_graduation_enrollments_student
+ON graduation_enrollments(student_id);
+
+CREATE INDEX IF NOT EXISTS idx_graduation_enrollments_period
+ON graduation_enrollments(academic_period_id);
+
+CREATE INDEX IF NOT EXISTS idx_graduation_enrollments_status
+ON graduation_enrollments(status);
